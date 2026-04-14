@@ -153,6 +153,55 @@
       }
     },
     "schemas": {
+      "Schedule": {
+        "type": "object",
+        "description": "Repetition rule for the task",
+        "discriminator": {
+          "propertyName": "type"
+        },
+        "oneOf": [
+          { "$ref": "#/components/schemas/DailySchedule" },
+          { "$ref": "#/components/schemas/MonthlySchedule" },
+          { "$ref": "#/components/schemas/DatesSchedule" },
+          { "$ref": "#/components/schemas/ParitySchedule" }
+        ]
+      },
+      "DailySchedule": {
+        "type": "object",
+        "required": ["type", "interval"],
+        "properties": {
+          "type": { "type": "string", "enum": ["daily"] },
+          "interval": { "type": "integer", "minimum": 1, "example": 3 }
+        }
+      },
+      "MonthlySchedule": {
+        "type": "object",
+        "required": ["type", "day"],
+        "properties": {
+          "type": { "type": "string", "enum": ["monthly"] },
+          "day": { "type": "integer", "minimum": 1, "maximum": 31, "example": 15 }
+        }
+      },
+      "DatesSchedule": {
+        "type": "object",
+        "required": ["type", "dates"],
+        "properties": {
+          "type": { "type": "string", "enum": ["dates"] },
+          "dates": {
+            "type": "array",
+            "items": { "type": "string", "format": "date" },
+            "example": ["2026-02-10", "2026-03-15"]
+          }
+        }
+      },
+      "ParitySchedule": {
+        "type": "object",
+        "required": ["type", "parity"],
+        "properties": {
+          "type": { "type": "string", "enum": ["parity"] },
+          "parity": { "type": "string", "enum": ["even", "odd"], "example": "even" }
+        }
+      },
       "CreateTaskRequest": {
         "type": "object",
         "required": ["title"],
@@ -169,6 +218,9 @@
             "type": "string",
             "enum": ["new", "in_progress", "done"],
             "example": "new"
+          },
+          "schedule": {
+            "$ref": "#/components/schemas/Schedule"
           }
         }
       },
@@ -188,6 +240,9 @@
             "type": "string",
             "enum": ["new", "in_progress", "done"],
             "example": "in_progress"
+          },
+          "schedule": {
+            "$ref": "#/components/schemas/Schedule"
           }
         }
       },
@@ -204,6 +259,9 @@
             "type": "string",
             "enum": ["new", "in_progress", "done"],
             "example": "new"
+          },
+          "schedule": {
+            "$ref": "#/components/schemas/Schedule"
           },
           "created_at": {
             "type": "string",

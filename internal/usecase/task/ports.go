@@ -12,6 +12,9 @@ type Repository interface {
 	Update(ctx context.Context, task *taskdomain.Task) (*taskdomain.Task, error)
 	Delete(ctx context.Context, id int64) error
 	List(ctx context.Context) ([]taskdomain.Task, error)
+
+	ListTasksWithSchedule(ctx context.Context) ([]taskdomain.Task, error)
+	GetByIDForUpdate(ctx context.Context, id int64) (*taskdomain.Task, error)
 }
 
 type Usecase interface {
@@ -26,10 +29,12 @@ type CreateInput struct {
 	Title       string
 	Description string
 	Status      taskdomain.Status
+	Schedule    *taskdomain.Schedule // nil для одноразовой задачи
 }
 
 type UpdateInput struct {
 	Title       string
 	Description string
 	Status      taskdomain.Status
+	Schedule    *taskdomain.Schedule
 }

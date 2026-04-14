@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -31,6 +32,7 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (*taskdomain.Ta
 		Title:       normalized.Title,
 		Description: normalized.Description,
 		Status:      normalized.Status,
+		Schedule:    normalized.Schedule,
 	}
 	now := s.now()
 	model.CreatedAt = now
@@ -67,6 +69,7 @@ func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) (*tas
 		Title:       normalized.Title,
 		Description: normalized.Description,
 		Status:      normalized.Status,
+		Schedule:    normalized.Schedule,
 		UpdatedAt:   s.now(),
 	}
 
@@ -106,6 +109,12 @@ func validateCreateInput(input CreateInput) (CreateInput, error) {
 		return CreateInput{}, fmt.Errorf("%w: invalid status", ErrInvalidInput)
 	}
 
+	if input.Schedule != nil {
+		if err := validateSchedule(input.Schedule); err != nil {
+			return CreateInput{}, fmt.Errorf("%w: %v", ErrInvalidInput, err)
+		}
+	}
+
 	return input, nil
 }
 
@@ -121,5 +130,42 @@ func validateUpdateInput(input UpdateInput) (UpdateInput, error) {
 		return UpdateInput{}, fmt.Errorf("%w: invalid status", ErrInvalidInput)
 	}
 
+	if input.Schedule != nil {
+		if err := validateSchedule(input.Schedule); err != nil {
+			return UpdateInput{}, fmt.Errorf("%w: %v", ErrInvalidInput, err)
+		}
+	}
+
 	return input, nil
+}
+
+func validateSchedule(s *taskdomain.Schedule) error {
+	switch s.Type {
+	case taskdomain.ScheduleNone:
+		return errors.New("schedule type cannot be empty")
+	case taskdomain.ScheduleDaily:
+		if s.Interval <= 0 {
+			return errors.New("daily schedule requires interval > 0")
+		}
+	case taskdomain.ScheduleMonthly:
+		if s.Day < 1 || s.Day > 31 {
+			return errors.New("monthly schedule requires day between 1 and 31")
+		}
+	case taskdomain.ScheduleDates:
+		if len(s.Dates) == 0 {
+			return errors.New("dates schedule requires at least one date")
+		}
+		for _, d := range s.Dates {
+			if _, err := time.Parse("2006-01-02", d); err != nil {
+				return fmt.Errorf("invalid date format in dates schedule: %s", d)
+			}
+		}
+	case taskdomain.ScheduleParity:
+		if s.Parity != "even" && s.Parity != "odd" {
+			return errors.New("parity schedule requires 'even' or 'odd'")
+		}
+	default:
+		return fmt.Errorf("unknown schedule type: %s", s.Type)
+	}
+	return nil
 }
